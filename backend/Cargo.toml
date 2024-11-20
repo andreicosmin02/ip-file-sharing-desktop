@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.7.7"                                            # Axum for routing
-tokio = { version = "1", features = ["full"] }            # Tokio runtime for async
-hyper = "1.5.0"                                           # Hyper HTTP server used by Axum
-serde = { version = "1.0", features = ["derive"] }        # Serde for JSON serialization (optional)
-tower = "0.5.1"                                           # Tower for middleware (optional)
+axum = "0.7.7"
+tokio = { version = "1", features = ["full"] }
+hyper = "1.5.0"
+serde = { version = "1.0", features = ["derive"] }
+tower = "0.5.1"
