@@ -2,8 +2,9 @@ use axum::{routing::post, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use std::net::{SocketAddr, TcpListener};
 use std::error::Error;
-
+use tokio::task::JoinHandle;
 use crate::server::file_handler::receive_file;
+use crate::server::mdns_handler::announce_service;
 
 pub async fn start_https_server() -> Result<(), Box<dyn Error>> {
     // Load the certificate and key files for HTTPS
@@ -41,13 +42,30 @@ pub async fn start_https_server() -> Result<(), Box<dyn Error>> {
     println!("HTTPS server listening on https://{}", addr);
 
     // Start the HTTPS server using the `RustlsConfig` and the assigned address
-    axum_server::bind_rustls(addr, tls_config)
-        .serve(app.into_make_service())
-        .await
-        .map_err(|e| {
+    let server_handle: JoinHandle<()> = tokio::spawn(async move {
+        if let Err(e) = axum_server::bind_rustls(addr, tls_config)
+            .serve(app.into_make_service())
+            .await
+        {
             eprintln!("Server error: {}", e);
-            e
-        })?;
+        }
+    });
+
+    // Announce the service using mDNS and handle potential errors
+    match announce_service(addr.port()) {
+        Ok(_) => {
+            println!("Service successfully announced via mDNS.");
+        }
+        Err(e) => {
+            eprintln!("Failed to announce mDNS service: {}", e);
+        }
+    }
+
+    // Await the server task to prevent the program from exiting
+    server_handle.await.map_err(|e| {
+        eprintln!("Failed to run the server task: {:?}", e);
+        "Server task failed"
+    })?;
 
     Ok(())
 }
